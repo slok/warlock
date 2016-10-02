@@ -1,0 +1,19 @@
+version: "2"
+services:
+  warlock:
+    build:
+      context: ../..
+      dockerfile: environment/dev/Dockerfile
+    volumes:
+      - ../..:/go/src/github.com/slok/warlock
+      - ~/.gitconfig:/home/warlock/.gitignore:ro
+      - ~/.ssh:/home/warlock/.ssh:ro
+      - ~/.bash_history.warlock:/home/warlock/.bash_history
+
+    command: "go build -o ./bin/warlock ./ && ./bin/warlock"
+    networks:
+      warlock:
+        aliases:
+          - warlock
+networks:
+  warlock:
