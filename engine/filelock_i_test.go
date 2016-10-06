@@ -36,9 +36,11 @@ func fileExists(file string) bool {
 func TestLockNoPreviousLock(t *testing.T) {
 	defer func() { os.Remove(testPathKey) }()
 	e := File{
+		Key:  testKey,
 		Path: testPath,
+		TTL:  1 * time.Second,
 	}
-	err := e.Lock(testKey)
+	err := e.Lock()
 	if err != nil {
 		t.Errorf("Lock shouldn't return an error: %v", err)
 	}
@@ -51,14 +53,15 @@ func TestLockNoPreviousLock(t *testing.T) {
 func TestLockPreviousLock(t *testing.T) {
 	defer func() { os.Remove(testPathKey) }()
 	e := File{
+		Key:  testKey,
 		Path: testPath,
 		TTL:  1 * time.Second,
 	}
-	err := e.Lock(testKey)
+	err := e.Lock()
 	if err != nil {
 		t.Errorf("Lock shouldn't return an error: %v", err)
 	}
-	err = e.Lock(testKey)
+	err = e.Lock()
 	if err == nil {
 		t.Errorf("Lock should return an error")
 	}
@@ -67,11 +70,12 @@ func TestLockPreviousLock(t *testing.T) {
 func TestLockExpire(t *testing.T) {
 	defer func() { os.Remove(testPathKey) }()
 	e := File{
+		Key:    testKey,
 		Path:   testPath,
 		TTL:    10 * time.Millisecond,
 		Expire: true,
 	}
-	err := e.Lock(testKey)
+	err := e.Lock()
 	if err != nil {
 		t.Errorf("Lock shouldn't return an error: %v", err)
 	}
@@ -79,20 +83,45 @@ func TestLockExpire(t *testing.T) {
 		t.Errorf("File should exist")
 	}
 	time.Sleep(e.TTL)
-	err = e.Lock(testKey)
+	err = e.Lock()
 	if err != nil {
 		t.Errorf("Lock shouldn't return an error: %v", err)
+	}
+}
+
+func TestLockNotExpire(t *testing.T) {
+	defer func() { os.Remove(testPathKey) }()
+	e := File{
+		Key:  testKey,
+		Path: testPath,
+		TTL:  50 * time.Millisecond,
+	}
+	err := e.Lock()
+	if err != nil {
+		t.Errorf("Lock shouldn't return an error: %v", err)
+	}
+	if !fileExists(testPathKey) {
+		t.Errorf("File should exist")
+	}
+	time.Sleep(e.TTL * 2)
+	err = e.Lock()
+	if err == nil {
+		t.Errorf("Lock should return an error")
 	}
 }
 
 func TestUnLockPreviousLock(t *testing.T) {
 	defer func() { os.Remove(testPathKey) }()
 	e := File{
+		Key:  testKey,
 		Path: testPath,
 		TTL:  1 * time.Second,
 	}
-	e.Lock(testKey)
-	err := e.Unlock(testKey)
+	err := e.Lock()
+	if err != nil {
+		t.Fatalf("Lock shouldn't return an error: %v", err)
+	}
+	err = e.Unlock()
 	if err != nil {
 		t.Errorf("Unlock shouldn't return an error: %v", err)
 	}
@@ -104,9 +133,11 @@ func TestUnLockPreviousLock(t *testing.T) {
 
 func TestUnLockNoPreviousLock(t *testing.T) {
 	e := File{
+		Key:  testKey,
 		Path: testPath,
+		TTL:  1 * time.Second,
 	}
-	err := e.Unlock(testKey)
+	err := e.Unlock()
 	if err == nil {
 		t.Errorf("Unlock should return an error")
 	}
