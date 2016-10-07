@@ -1,2 +1,4 @@
 package: github.com/slok/warlock
-import: []
+import:
+- package: github.com/uber-go/zap
+- package: github.com/uber-go/atomic
