@@ -8,6 +8,8 @@ import (
 	"path"
 	"strconv"
 	"time"
+
+	"github.com/slok/warlock/log"
 )
 
 // File file lock will implement a distributed lock using a shared filesystem
@@ -17,6 +19,9 @@ type File struct {
 	TTL    time.Duration
 	Expire bool
 	ticker *time.Ticker
+
+	pathKey string
+	waiter  chan struct{}
 }
 
 // Lock will lock using a simple file
@@ -51,7 +56,7 @@ func (f *File) Lock() error {
 
 // renew will renew the ttl of the lock
 func (f *File) renew() error {
-	pathKey := path.Join(f.Path, f.Key)
+	pathKey := f.getPathKey()
 	now := time.Now().UTC()
 	t := now.Add(f.TTL)
 	b := []byte(fmt.Sprintf("%d", t.UnixNano()))
@@ -63,6 +68,7 @@ func (f *File) renew() error {
 
 // Unlock unlocks a defined key
 func (f *File) Unlock() error {
+	pathKey := f.getPathKey()
 	// Check locked first
 	locked, err := f.Locked()
 	if err != nil {
@@ -73,7 +79,6 @@ func (f *File) Unlock() error {
 	}
 
 	// Unlock removing the key
-	pathKey := path.Join(f.Path, f.Key)
 	if err := os.Remove(pathKey); err != nil {
 		return err
 	}
@@ -86,7 +91,7 @@ func (f *File) Unlock() error {
 
 // Locked checks if the key is locked
 func (f *File) Locked() (bool, error) {
-	pathKey := path.Join(f.Path, f.Key)
+	pathKey := f.getPathKey()
 	if _, err := os.Stat(pathKey); os.IsNotExist(err) {
 		return false, nil
 	}
@@ -120,4 +125,44 @@ func (f *File) Locked() (bool, error) {
 	}
 
 	return false, nil
+}
+
+// Wait will return a channel that will be blocked until
+func (f *File) Wait() <-chan struct{} {
+	// If already waiting return the same channel
+	if f.waiter != nil {
+		return f.waiter
+	}
+
+	// Create a goroutine checking the status and return the waiting channel
+	f.waiter = make(chan struct{})
+	go func() {
+		// check every TTL
+		t := time.NewTicker(f.TTL)
+
+		for range t.C {
+			locked, err := f.Locked()
+			if err != nil {
+				log.Logger.Error(err.Error())
+			}
+			// Stop ticker and close channel to free the wait signal
+			if !locked {
+				t.Stop()
+				close(f.waiter)
+				f.waiter = nil
+			}
+		}
+		log.Logger.Info("4")
+	}()
+
+	return f.waiter
+}
+
+// Internal method so we don't generate the path key on every check
+func (f *File) getPathKey() string {
+	if f.pathKey == "" {
+		f.pathKey = path.Join(f.Path, f.Key)
+	}
+
+	return f.pathKey
 }
