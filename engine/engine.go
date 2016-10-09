@@ -4,11 +4,11 @@ package engine
 // be locks
 type Engine interface {
 	// Lock locks a defined key
-	Lock(key string) error
+	Lock() error
 
 	// Unlock unlocks a defined key
-	Unlock(key string) error
+	Unlock() error
 
 	// Locked checks if the key is locked
-	Locked(key string) (bool, error)
+	Locked() (bool, error)
 }

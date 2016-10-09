@@ -5,39 +5,45 @@ import (
 	"testing"
 )
 
+const (
+	key = "test_key"
+)
+
 // TestEngine is an engine only for testing purposes
 type TestEngine struct {
+	Key   string
 	locks map[string]interface{}
 }
 
-func newTestEngine() *TestEngine {
+func newTestEngine(key string) *TestEngine {
 	return &TestEngine{
+		Key:   key,
 		locks: make(map[string]interface{}),
 	}
 }
 
-func (t *TestEngine) Lock(key string) error {
-	if _, ok := t.locks[key]; ok {
+func (t *TestEngine) Lock() error {
+	if _, ok := t.locks[t.Key]; ok {
 		return fmt.Errorf("already locked")
 	}
 
-	t.locks[key] = nil
+	t.locks[t.Key] = nil
 
 	return nil
 }
 
-func (t *TestEngine) Unlock(key string) error {
-	if _, ok := t.locks[key]; !ok {
+func (t *TestEngine) Unlock() error {
+	if _, ok := t.locks[t.Key]; !ok {
 		return fmt.Errorf("not locked")
 	}
 
-	delete(t.locks, key)
+	delete(t.locks, t.Key)
 
 	return nil
 }
 
-func (t *TestEngine) Locked(key string) (bool, error) {
-	if _, ok := t.locks[key]; ok {
+func (t *TestEngine) Locked() (bool, error) {
+	if _, ok := t.locks[t.Key]; ok {
 		return true, nil
 	}
 
@@ -47,10 +53,9 @@ func (t *TestEngine) Locked(key string) (bool, error) {
 // Tests
 
 func TestLock(t *testing.T) {
-	key := "test_key"
 	l := Warlock{
 		Key:    key,
-		Engine: newTestEngine(),
+		Engine: newTestEngine(key),
 	}
 	if err := l.Lock(); err != nil {
 		t.Errorf("Lock shouldn't return an error: %v", err)
@@ -58,8 +63,7 @@ func TestLock(t *testing.T) {
 }
 
 func TestLockBeingLocked(t *testing.T) {
-	key := "test_key"
-	e := newTestEngine()
+	e := newTestEngine(key)
 	l1 := Warlock{
 		Key:    key,
 		Engine: e,
@@ -76,10 +80,9 @@ func TestLockBeingLocked(t *testing.T) {
 }
 
 func TestUnlock(t *testing.T) {
-	key := "test_key"
 	l := Warlock{
 		Key:    key,
-		Engine: newTestEngine(),
+		Engine: newTestEngine(key),
 	}
 	l.Lock()
 	if err := l.Unlock(); err != nil {
@@ -88,10 +91,9 @@ func TestUnlock(t *testing.T) {
 }
 
 func TestUnlockWithoutLock(t *testing.T) {
-	key := "test_key"
 	l := Warlock{
 		Key:    key,
-		Engine: newTestEngine(),
+		Engine: newTestEngine(key),
 	}
 	if err := l.Unlock(); err == nil {
 		t.Errorf("Unlock should return an error, it didn't")

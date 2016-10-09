@@ -18,7 +18,7 @@ type Warlock struct {
 // Lock locks the lock
 func (w *Warlock) Lock() error {
 	// Check if is already locked
-	l, err := w.Engine.Locked(w.Key)
+	l, err := w.Engine.Locked()
 	if err != nil {
 		return err
 	}
@@ -27,7 +27,7 @@ func (w *Warlock) Lock() error {
 	}
 
 	// Lock
-	if err = w.Engine.Lock(w.Key); err != nil {
+	if err = w.Engine.Lock(); err != nil {
 		return err
 	}
 
@@ -37,7 +37,7 @@ func (w *Warlock) Lock() error {
 // Unlock unlocks the lock
 func (w *Warlock) Unlock() error {
 	// If not locked then can't be unlocked
-	l, err := w.Engine.Locked(w.Key)
+	l, err := w.Engine.Locked()
 	if err != nil {
 		return err
 	}
@@ -46,7 +46,7 @@ func (w *Warlock) Unlock() error {
 	}
 
 	// Unlock
-	if err = w.Engine.Unlock(w.Key); err != nil {
+	if err = w.Engine.Unlock(); err != nil {
 		return err
 	}
 
