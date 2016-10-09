@@ -11,4 +11,7 @@ type Engine interface {
 
 	// Locked checks if the key is locked
 	Locked() (bool, error)
+
+	// Wait returns a channel that will receive a signal when the lock is released
+	Wait() <-chan struct{}
 }

@@ -9,7 +9,7 @@ import (
 // Warlock reprensents the lock object that holds the lock
 type Warlock struct {
 	// The lock key that will identify the lock
-	Key string
+	//Key string
 
 	// Engine will reprenset the locks engine
 	Engine engine.Engine
@@ -51,4 +51,9 @@ func (w *Warlock) Unlock() error {
 	}
 
 	return nil
+}
+
+// Wait returns a channel so it waits until the lock is released
+func (w *Warlock) Wait() <-chan struct{} {
+	return w.Engine.Wait()
 }
